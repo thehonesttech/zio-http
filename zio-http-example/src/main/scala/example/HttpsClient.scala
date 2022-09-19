@@ -4,6 +4,7 @@ import io.netty.handler.ssl.SslContextBuilder
 import zio._
 import zio.http.model.Headers
 import zio.http.netty.client.ClientSSLHandler.ClientSSLOptions
+import zio.http.netty.client.ConnectionPool
 import zio.http.{Client, ClientConfig}
 
 import java.io.InputStream
@@ -34,6 +35,6 @@ object HttpsClient extends ZIOAppDefault {
   } yield ()
 
   val clientConfig = ClientConfig.empty.ssl(sslOption)
-  val run          = program.provide(ClientConfig.live(clientConfig), Client.live, Scope.default)
+  val run = program.provide(ClientConfig.live(clientConfig), Client.live, ConnectionPool.disabled, Scope.default)
 
 }

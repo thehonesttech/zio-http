@@ -4,6 +4,7 @@ import io.netty.handler.codec.DecoderException
 import io.netty.handler.ssl.SslContextBuilder
 import zio.http.model.Status
 import zio.http.netty.client.ClientSSLHandler._
+import zio.http.netty.client.ConnectionPool
 import zio.http.{Client, ClientConfig}
 import zio.test.Assertion.{anything, equalTo, fails, isSubtype}
 import zio.test.TestAspect.{ignore, timeout}
@@ -53,7 +54,12 @@ object ClientHttpsSpec extends ZIOSpecDefault {
         .exit
       assertZIO(actual)(fails(isSubtype[DecoderException](anything)))
     },
-  ).provide(ClientConfig.live(ClientConfig.empty.ssl(sslOption)), Client.live, Scope.default) @@ timeout(
+  ).provide(
+    ClientConfig.live(ClientConfig.empty.ssl(sslOption)),
+    Client.live,
+    ConnectionPool.disabled,
+    Scope.default,
+  ) @@ timeout(
     30 seconds,
   ) @@ ignore
 }

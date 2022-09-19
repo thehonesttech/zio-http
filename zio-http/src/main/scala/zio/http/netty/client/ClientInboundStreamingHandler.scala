@@ -9,7 +9,8 @@ import zio.{Promise, Unsafe}
 final class ClientInboundStreamingHandler(
   val rtm: NettyRuntime,
   req: Request,
-  promise: Promise[Throwable, Response],
+  onResponse: Promise[Throwable, Response],
+  onComplete: Promise[Throwable, ChannelState],
 ) extends SimpleChannelInboundHandler[HttpObject](false) {
 
   private implicit val unsafeClass: Unsafe = Unsafe.unsafe
@@ -23,11 +24,14 @@ final class ClientInboundStreamingHandler(
       case response: HttpResponse =>
         ctx.channel().config().setAutoRead(false)
         rtm.runUninterruptible(ctx) {
-          promise
+          onResponse
             .succeed(
               Response.unsafe.fromStreamingJResponse(
                 ctx,
                 response,
+                rtm,
+                onComplete,
+                HttpUtil.isKeepAlive(response),
               ),
             )
         }(unsafeClass)
@@ -39,7 +43,9 @@ final class ClientInboundStreamingHandler(
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, error: Throwable): Unit = {
-    rtm.run(ctx)(promise.fail(error).uninterruptible)(unsafeClass)
+    rtm.runUninterruptible(ctx)(
+      onResponse.fail(error) *> onComplete.fail(error),
+    )(unsafeClass)
   }
 
   private def encodeRequest(req: Request): HttpRequest = {
