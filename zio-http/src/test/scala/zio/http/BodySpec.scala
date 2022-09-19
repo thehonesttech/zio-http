@@ -47,7 +47,7 @@ object BodySpec extends ZIOSpecDefault {
             test("success") {
               val ctx     = new EmbeddedChannel()
               val message = Chunk.fromArray("Hello World".getBytes(HTTP_CHARSET))
-              val chunk   = Body.fromAsync(async => async(ctx, message, true)).asChunk
+              val chunk   = Body.fromAsync(async => async(ctx, message, isLast = true)).asChunk
               assertZIO(chunk)(equalTo(message))
             },
             test("fail") {
